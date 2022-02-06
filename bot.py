@@ -30,11 +30,11 @@ async def on_ready():
 # ==================================================================================================
 # VALORANT POLL FUNCTION
 # ==================================================================================================
-question_keywords = {'any', '?'}
-val_keywords = {'val', 'valer', 'baler', 'baller', 'valorant'}
+question_keywords = {'any', '?', 'in the chat'}
+val_keywords = {'val', 'baler', 'comper', 'unrater', '5stack', '5 stack', 'fifth', 'bal upper'}
 
 # Variables related to the bot's latest poll
-player_threshold = 3
+player_threshold = 2
 latest_bot_response = None
 latest_message_author = None
 yes_users = set()
@@ -46,6 +46,7 @@ users_list = [yes_users, wait_users, no_users]
 def move_to_user_list(users, user) -> None:
     """Adds the user to users. If the user is any lists of users, they are removed from them.
     """
+    # Empty all lists
     for user_set in users_list:
         if user in user_set:
             user_set.remove(user)
@@ -139,6 +140,9 @@ async def on_message(message) -> None:
         await response.add_reaction('🟨')
         await response.add_reaction('🟥')
 
+    if 'wendys' in message.content.lower():
+        await channel.send('wendys?')
+
 
 @bot.event
 async def on_reaction_add(reaction, reactor) -> None:
@@ -147,6 +151,7 @@ async def on_reaction_add(reaction, reactor) -> None:
     """
     message = reaction.message
     channel = message.channel
+    redundant = reactor in yes_users or reactor in wait_users
 
     # Return early if bot is responding to itself
     if reactor == bot.user:
@@ -159,10 +164,10 @@ async def on_reaction_add(reaction, reactor) -> None:
         if reaction.emoji == '🟩':
             move_to_user_list(yes_users, reactor)
 
-        if reaction.emoji == '🟨':
+        elif reaction.emoji == '🟨':
             move_to_user_list(wait_users, reactor)
 
-        if reaction.emoji == '🟥':
+        elif reaction.emoji == '🟥':
             move_to_user_list(no_users, reactor)
 
         # Clone original embed
@@ -184,7 +189,7 @@ async def on_reaction_add(reaction, reactor) -> None:
         await message.edit(embed=new_embed)
 
         # Check if enough players are ready to play
-        if len(yes_users) >= player_threshold:
+        if len(yes_users) >= player_threshold and not redundant and (reaction.emoji == '🟩' or reaction.emoji == '🟨'):
             # Prepare text and embed to ping with
             text = write_ping_list(yes_users)
 
