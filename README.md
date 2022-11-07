@@ -1,4 +1,4 @@
-# Prodbot
+# HamBot
 Discord server bot created for friends to coordinate gaming activities. My first bot :)
 
 This bot automatically detects when server members request to play a certain game ("Valorant") using certain keywords.
