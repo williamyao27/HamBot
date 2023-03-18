@@ -1,6 +1,7 @@
 # bot.py
 import os
 import discord
+import random
 from dotenv import load_dotenv
 
 
@@ -28,13 +29,14 @@ async def on_ready():
 
 
 # ==================================================================================================
-# VALORANT POLL FUNCTION
+# GAME POLL FUNCTION
 # ==================================================================================================
-question_keywords = {'any', '?', 'in the chat'}
-val_keywords = {'val', 'baler', 'comper', 'unrater', '5stack', '5 stack', 'fifth', 'bal upper'}
+question_keywords = {'any', '?', 'in the chat', 'wanna', 'want'}
+val_keywords = {'val', 'baler', 'comper', 'unrater', '5stack', '5 stack', '5man', '5 man', 'fifth',
+                'bal upper', 'baller'}
 
 # Variables related to the bot's latest poll
-player_threshold = 2
+player_threshold = 3
 latest_bot_response = None
 latest_message_author = None
 yes_users = set()
@@ -140,10 +142,6 @@ async def on_message(message) -> None:
         await response.add_reaction('🟨')
         await response.add_reaction('🟥')
 
-    if 'wendys' in message.content.lower():
-        await channel.send('wendys?')
-
-
 @bot.event
 async def on_reaction_add(reaction, reactor) -> None:
     """Edits the bot's latest poll message if users interact with it by adding the proper
@@ -188,7 +186,8 @@ async def on_reaction_add(reaction, reactor) -> None:
         new_embed = discord.Embed.from_dict(embed_dict)
         await message.edit(embed=new_embed)
 
-        # Check if enough players are ready to play
+        # Check if enough players are ready to play; only when a positive reaction is updated and
+        # the reactor did not already vote yes
         if len(yes_users) >= player_threshold and not redundant and (reaction.emoji == '🟩' or reaction.emoji == '🟨'):
             # Prepare text and embed to ping with
             text = write_ping_list(yes_users)
@@ -202,6 +201,10 @@ async def on_reaction_add(reaction, reactor) -> None:
 
             # Send embed as message
             await channel.send(text, embed=embed)
+
+        # Remove reaction
+        if reactor != bot.user:
+            await reaction.remove(reactor)
 
 
 bot.run(TOKEN)
