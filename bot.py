@@ -5,6 +5,8 @@
 # This is the main file to run HamBot on all connected servers.
 # ==================================================================================================
 import os
+import pickle
+
 import dotenv
 from discord.ext import commands, tasks
 
@@ -40,7 +42,7 @@ async def on_ready() -> None:
 
         # Initialize data for this server
         poll_managers[gid] = poll.PollManager()
-        plant_managers[gid] = garden.PlantManager()
+        plant_managers[gid] = garden.PlantManager(gid)
 
 
 # ==================================================================================================

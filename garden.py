@@ -1,8 +1,8 @@
 # ==================================================================================================
 # Contains all the behaviors for the bot to create message-based minigames in a server.
 # ==================================================================================================
-import discord
 from discord.ext import tasks
+import pickle
 
 # Constants
 
@@ -10,15 +10,28 @@ from discord.ext import tasks
 class PlantManager:
     """Creates and manages the server plant.
     """
-    def __init__(self):
+    def __init__(self, gid):
         """Initialize the PlantManager for this server.
+        """
+        self.__gid = gid  # Store gid for this manager so it can be pickled to the proper file
+
+        # Find and load this server's plant information from pickle
+        try:
+            self.__load()
+        except FileNotFoundError:
+            # If none found, then initialize a new plant
+            self.__reset_plant()
+
+        self.tick.start()
+
+    def __reset_plant(self) -> None:
+        """Initialize the stats of the plant for this PlantManager.
         """
         self.__name = "Plant"
         self.__hydration = 100.
         self.__happiness = 100.
         self.__alive = True
         self.__death_cause = None
-        self.tick.start()
 
     def __mood(self) -> str:
         """Return a string describing this plant's mood based on its happiness level.
@@ -50,6 +63,15 @@ class PlantManager:
             await ctx.send(":skull:\n")
             await ctx.send(f"*{self.__name}*\n"
                            f"**Plant died due to {self.__death_cause}**.")
+
+    async def __respawn(self, ctx) -> None:
+        """Respawn this server's plant.
+        """
+        if self.__alive:
+            await ctx.send(f"Cannot respawn the plant because {self.__name} is still alive.")
+        else:
+            self.__reset_plant()
+            await ctx.send("Respawned the plant.")
 
     async def __set_name(self, ctx, *args) -> None:
         """Set name for this server's plant and send notification.
@@ -84,7 +106,7 @@ class PlantManager:
 
         # Respawn the plant
         elif args[0] == "respawn":
-            pass
+            await self.__respawn(ctx)
 
         # Except for respawning, no other commands are permitted with a dead plant
         elif not self.__alive:
@@ -102,6 +124,32 @@ class PlantManager:
                 case _:
                     # Unknown command, react with ?
                     await ctx.message.add_reaction("❓")
+
+    def __dump(self) -> None:
+        """Write the relevant attributes of this server's plant as a dictionary into a pickle file.
+        """
+        attributes = {
+            "name": self.__name,
+            "hydration": self.__hydration,
+            "happiness": self.__happiness,
+            "alive": self.__alive,
+            "death_cause": self.__death_cause,
+        }
+
+        with open(f"plant_managers/{self.__gid}.pickle", "wb") as fp:
+            pickle.dump(attributes, fp)
+
+    def __load(self) -> None:
+        """Set attributes of this server's plant with the dictionary from its pickle file.
+        """
+        with open(f"plant_managers/{self.__gid}.pickle", "rb") as fp:
+            attributes = pickle.load(fp)
+
+        self.__name = attributes["name"]
+        self.__hydration = attributes["hydration"]
+        self.__happiness = attributes["happiness"]
+        self.__alive = attributes["alive"]
+        self.__death_cause = attributes["death_cause"]
 
     @tasks.loop(seconds=20)
     async def tick(self) -> None:
@@ -121,3 +169,6 @@ class PlantManager:
 
             # Lose happiness (exponential decay)
             self.__happiness = round(self.__happiness * 0.995, 2)
+
+        # Save plant information
+        self.__dump()
