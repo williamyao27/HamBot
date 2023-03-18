@@ -5,11 +5,11 @@
 # This is the main file to run HamBot on all connected servers.
 # ==================================================================================================
 import os
-import discord
 import dotenv
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 import poll
+import garden
 
 
 # ==================================================================================================
@@ -22,10 +22,11 @@ GUILD = os.getenv("DISCORD_GUILD")
 guild_ids = [int(guild_id) for guild_id in GUILD.split(",")]
 
 # Create bot
-bot = commands.Bot(command_prefix="/")
+bot = commands.Bot(command_prefix="!")
 
 # Initialize server-specific bot data
 poll_managers = {}
+plant_managers = {}
 
 
 @bot.event
@@ -39,19 +40,18 @@ async def on_ready() -> None:
 
         # Initialize data for this server
         poll_managers[gid] = poll.PollManager()
+        plant_managers[gid] = garden.PlantManager()
 
 
 # ==================================================================================================
-# BOT BEHAVIOR HELPERS
+# PLANT
 # ==================================================================================================
-
-# ==================================================================================================
-# COMMANDS
-# ==================================================================================================
-# @bot.commands
-# async def echo(ctx, *args):
-#     response = " ".join(args)
-#     await ctx.send(response)
+@bot.command()
+async def plant(ctx, *args) -> None:
+    """Process command to interact with the server plant.
+    """
+    gid = ctx.guild.id
+    await plant_managers[gid].process_cmd(ctx, *args)
 
 
 # ==================================================================================================
@@ -69,6 +69,9 @@ async def on_message(message) -> None:
 
     # Manage polls
     await poll_managers[gid].create_poll(message)
+
+    # Commands
+    await bot.process_commands(message)
 
 
 @bot.event

@@ -1,3 +1,6 @@
+# ==================================================================================================
+# Contains all the behaviors for the bot to create and manage polls in a given server.
+# ==================================================================================================
 from typing import Union
 import discord
 
@@ -5,14 +8,14 @@ import discord
 YES_EMOJI = "🟩"
 WAIT_EMOJI = "🟨"
 NO_EMOJI = "🟥"
-question_keywords = {"any", "?", "in the chat", "wanna", "want"}
-val_keywords = {"val", "baler", "comper", "unrater", "5stack", "5 stack", "5man", "5 man", "fifth",
+QUESTION_KEYWORDS = {"any", "?", "in the chat", "wanna", "want"}
+VAL_KEYWORDS = {"val", "baler", "comper", "unrater", "5stack", "5 stack", "5man", "5 man", "fifth",
                 "bal upper", "baller"}
-player_threshold = 3
+PLAYER_THRESHOLD = 3
 
 
 class PollManager:
-    """x
+    """Creates and manages game-related polls for a single server.
     """
     def __init__(self):
         """Initialize the PollManager for this server.
@@ -26,8 +29,8 @@ class PollManager:
         Return string of the game's name.
         """
         content = content.lower()
-        if any(keyword in content for keyword in question_keywords):
-            if any(keyword in content for keyword in val_keywords):
+        if any(keyword in content for keyword in QUESTION_KEYWORDS):
+            if any(keyword in content for keyword in VAL_KEYWORDS):
                 return "Valorant"
 
         return None
@@ -181,7 +184,7 @@ class PollManager:
 
             # Check if enough players are ready to play; only when a new yes reaction is added
             yes_list = self.__poll_lists["yes"]
-            if reaction.emoji == YES_EMOJI and len(yes_list) >= player_threshold and not redundant:
+            if reaction.emoji == YES_EMOJI and len(yes_list) >= PLAYER_THRESHOLD and not redundant:
                 # Prepare text and embed to ping with
                 text = self.__write_pings("yes")
 
