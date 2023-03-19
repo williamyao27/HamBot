@@ -7,6 +7,20 @@ import pickle
 import random
 
 # Constants
+FRUIT_MARKET = {
+    ":apple:": 1.0,
+    ":green_apple:": 1.1,
+    ":banana:": 0.5,
+    ":tangerine:": 1.2,
+    ":grapes:": 4.0,
+    ":strawberry:": 0.4,
+    ":avocado:": 3.0,
+    ":coconut:": 5.0,
+    ":cheese:": 6.0,
+    ":cookie:": 1.5,
+    ":fish:": 7.5,
+    ":gem:": 50.0,
+}
 
 
 class PlantManager:
@@ -45,20 +59,7 @@ class PlantManager:
         self.__economy = {}
         self.__inventories = {}
         self.__assets = {}
-        self.__market = {
-            ":apple:": 1.0,
-            ":green_apple:": 1.1,
-            ":banana:": 0.5,
-            ":tangerine:": 1.2,
-            ":grapes:": 4.0,
-            ":strawberry:": 0.4,
-            ":avocado:": 3.0,
-            ":coconut:": 5.0,
-            ":cheese:": 6.0,
-            ":cookie:": 1.5,
-            ":fish:": 7.5,
-            ":gem:": 50.0,
-        }
+        self.__market = FRUIT_MARKET.copy()
 
     def __mood(self) -> str:
         """Return a string describing this plant's mood based on its happiness level.
@@ -80,9 +81,12 @@ class PlantManager:
         """Adjust the price market for all fruits in this server.
         """
         for fruit in self.__market:
-            old_price = self.__market[fruit]
-            new_price = old_price + (1 / (old_price + 20))  # Inflation
-            new_price = new_price * (random.uniform(0.95, 1.05))  # Fluctuation
+            new_price = old_price = self.__market[fruit]
+            # Push price back to normal
+            if new_price < FRUIT_MARKET[fruit]:
+                new_price += 0.1
+            new_price *= 1.001  # General inflation
+            new_price *= random.uniform(0.95, 1.05)  # Fluctuation
             self.__market[fruit] = new_price
 
     async def __summary(self, ctx) -> None:
@@ -158,12 +162,32 @@ class PlantManager:
             await ctx.send(f"There are no fruit to harvest.")
 
     async def __check_wealth(self, ctx, *args) -> None:
-        """Send a message indicating the caller's wealth.
+        """Send a message indicating either the caller or all server membes' wealth.
         """
+        # Initialize account if needed
         if ctx.author.id not in self.__economy:
             self.__economy[ctx.author.id] = 0.
-        await ctx.send(f"**{ctx.author.display_name}** has "
-                       f"${round(self.__economy[ctx.author.id], 2)}.")
+
+        # Option 1: Report all members' wealth
+        if len(args) >= 2:
+            pass
+            # if args[1] == "all":
+            #     str_so_far = "**Server bank accounts:**"
+            #     client = discord.Client()
+            #     client.run()
+            #     for uid in self.__economy.keys():
+            #         user = await client.fetch_user(uid)
+            #         str_so_far += f"\n**{user.display_name}** has ${round(self.__economy[uid], 2)}."
+            #     await ctx.send(str_so_far)
+            #     client.close()
+            # else:
+            #     # Invalid usage
+            #     await ctx.send("!plant bank [all]")
+
+        # Option 2: Report caller's wealth
+        else:
+            await ctx.send(f"**{ctx.author.display_name}** has "
+                           f"${round(self.__economy[ctx.author.id], 2)}.")
 
     async def __check_inventory(self, ctx) -> None:
         """Send a message displaying the caller's inventory.
@@ -226,7 +250,7 @@ class PlantManager:
             if sell_all or (fruit == target_fruit and num_sold < num):
                 inventory.remove(fruit)  # Remove the fruit
                 total_sale += self.__market[fruit]  # Add sale money
-                self.__market[fruit] = self.__market[fruit] * 0.9  # Demand falls
+                self.__market[fruit] = self.__market[fruit] * 0.8  # Demand falls
                 num_sold += 1
 
         if num_sold == 0:
@@ -341,12 +365,10 @@ class PlantManager:
             # Lose happiness (exponential decay)
             self.__happiness = self.__happiness * 0.9925
 
-        # Generate fruit for the plant based on happiness probability
+        # Each tick, try to generate fruit for the plant based on happiness probability
         if len(self.__fruits) < 20 and (random.random() <= self.__happiness / 200):
-            random_fruit = random.choice([":apple:", ":green_apple:", ":banana:", ":tangerine:",
-                                          ":grapes:", ":strawberry:", ":avocado:", ":coconut:",
-                                          ":cheese:", ":cookie:", ":fish:", ":gem:"])
-            self.__fruits.append(random_fruit)
+            # Choose random fruit from fruit market
+            self.__fruits.append(random.choice(list(FRUIT_MARKET.keys())))
 
         # Adjust market
         self.__adjust_market()
