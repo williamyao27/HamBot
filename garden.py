@@ -184,10 +184,16 @@ class PlantManager:
             #     # Invalid usage
             #     await ctx.send("!plant bank [all]")
 
-        # Option 2: Report caller's wealth
+        # Option 2: Report caller's wealth and rank
         else:
+            # Find rank by sorting a copied dictionary and finding index of uid
+            sorted_economy = sorted(self.__economy, key=self.__economy.get, reverse=True)
+            rank = sorted_economy.index(ctx.author.id) + 1
+
+            # Report info
             await ctx.send(f"**{ctx.author.display_name}** has "
-                           f"${round(self.__economy[ctx.author.id], 2)}.")
+                           f"${round(self.__economy[ctx.author.id], 2)} "
+                           f"(Rank: {rank}).")
 
     async def __check_inventory(self, ctx) -> None:
         """Send a message displaying the caller's inventory.
@@ -208,7 +214,7 @@ class PlantManager:
         """
         str_so_far = "**Fruit market prices:**"
         for fruit in self.__market:
-            str_so_far += "\n" + fruit + ": $" + str(round(self.__market[fruit], 2))
+            str_so_far += "\n" + fruit + " $" + str(round(self.__market[fruit], 2))
         await ctx.send(str_so_far)
 
     async def __sell(self, ctx, *args) -> None:
@@ -257,10 +263,11 @@ class PlantManager:
             # Did not sell anything
             await ctx.send("No fruits were sold.")
         else:
-            # Report sale information
+            # Report sale information and new balance
             self.__add_wealth(ctx.author.id, total_sale)
-            await ctx.send(f"You sold {num_sold} fruit for ${round(total_sale, 2)}." if sell_all
-                           else f"You sold {num_sold} {target_fruit} for ${round(total_sale, 2)}.")
+            await ctx.send(f"You sold {num_sold} " + ("fruit" if sell_all else target_fruit) +
+                           f" for ${round(total_sale, 2)}. "
+                           f"You now have ${round(self.__economy[ctx.author.id], 2)}.")
 
     def __add_wealth(self, uid, amount) -> None:
         """Add the given amount of money to the account of the user with uid.
@@ -365,10 +372,11 @@ class PlantManager:
             # Lose happiness (exponential decay)
             self.__happiness = self.__happiness * 0.9925
 
-        # Each tick, try to generate fruit for the plant based on happiness probability
-        if len(self.__fruits) < 20 and (random.random() <= self.__happiness / 200):
-            # Choose random fruit from fruit market
-            self.__fruits.append(random.choice(list(FRUIT_MARKET.keys())))
+            # Each tick, try to generate fruit for the plant based on happiness probability
+            # At 100% happiness, fruit probability per tick is 25%
+            if len(self.__fruits) < 20 and (random.random() <= self.__happiness / 400):
+                # Choose random fruit from fruit market
+                self.__fruits.append(random.choice(list(FRUIT_MARKET.keys())))
 
         # Adjust market
         self.__adjust_market()
