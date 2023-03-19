@@ -82,7 +82,7 @@ class PlantManager:
         for fruit in self.__market:
             old_price = self.__market[fruit]
             new_price = old_price + (1 / (old_price + 20))  # Inflation
-            new_price = round(new_price * (random.uniform(0.85, 1.15)), 2)  # Fluctuation
+            new_price = new_price * (random.uniform(0.95, 1.05))  # Fluctuation
             self.__market[fruit] = new_price
 
     async def __summary(self, ctx) -> None:
@@ -95,8 +95,8 @@ class PlantManager:
             # Summary of stats, including list of fruit
             await ctx.send(":potted_plant:\n")
             await ctx.send(f"*{self.__name}*\n"
-                           f"**Hydration:** {self.__hydration}%\n"
-                           f"**Happiness:** {self.__happiness}% ({self.__mood()})\n"
+                           f"**Hydration:** {round(self.__hydration, 2)}%\n"
+                           f"**Happiness:** {round(self.__happiness, 2)}% ({self.__mood()})\n"
                            f"**Fruits:** {fruit_str if fruit_str != '' else 'None'}")
         else:
             # Death overview
@@ -128,14 +128,15 @@ class PlantManager:
         """Increment hydration for this server's plant and send notification.
         """
         self.__hydration += 10.
-        await ctx.send(f"Thanks for watering the plant! Its hydration is {self.__hydration}%.")
+        await ctx.send(f"Thanks for watering the plant! "
+                       f"Its hydration is {round(self.__hydration, 2)}%.")
 
     async def __pet(self, ctx) -> None:
         """Increment happiness for this server's plant and send notification.
         """
-        self.__happiness += 10.
-        self.__happiness = min(self.__happiness, 100.)
-        await ctx.send(f"Thanks for petting the plant! Its happiness is {self.__happiness}%.")
+        self.__happiness = min(self.__happiness + 10., 100.)
+        await ctx.send(f"Thanks for petting the plant! "
+                       f"Its happiness is {round(self.__happiness, 2)}%.")
 
     async def __harvest(self, ctx) -> None:
         """Harvest all fruit from the plant to the caller's inventory and send notification showing
@@ -157,30 +158,19 @@ class PlantManager:
             await ctx.send(f"There are no fruit to harvest.")
 
     async def __check_wealth(self, ctx, *args) -> None:
-        """Send a message indicating either the caller or the entire server's wealth.
+        """Send a message indicating the caller's wealth.
         """
-        # If multiple arguments, second has to be "all" to print all users' wealth
-        if len(args) >= 2:
-            if args[1] == "all":
-                for user in ctx.guild.fetch_members():  ######## need intents permission??
-                    if user.id not in self.__economy:
-                        self.__economy[user.id] = 0.
-                    await ctx.send(f"**{user.display_name}** has ${self.__economy[user.id]}.")
-            else:
-                # Invalid usage
-                await ctx.send("`!plant bank [all]`")
-        # Otherwise, just print the caller's wealth
-        else:
-            if ctx.author.id not in self.__economy:
-                self.__economy[ctx.author.id] = 0.
-            await ctx.send(f"**{ctx.author.display_name}** has ${self.__economy[ctx.author.id]}.")
+        if ctx.author.id not in self.__economy:
+            self.__economy[ctx.author.id] = 0.
+        await ctx.send(f"**{ctx.author.display_name}** has "
+                       f"${round(self.__economy[ctx.author.id], 2)}.")
 
     async def __check_inventory(self, ctx) -> None:
         """Send a message displaying the caller's inventory.
         """
+        # Create inventory if needed
         if ctx.author.id not in self.__inventories:
             self.__inventories[ctx.author.id] = []
-            # Create inventory if needed
 
         # Send message
         inventory = self.__inventories[ctx.author.id]
@@ -194,45 +184,59 @@ class PlantManager:
         """
         str_so_far = "**Fruit market prices:**"
         for fruit in self.__market:
-            str_so_far += "\n" + fruit + ": $" + str(self.__market[fruit])
+            str_so_far += "\n" + fruit + ": $" + str(round(self.__market[fruit], 2))
         await ctx.send(str_so_far)
 
     async def __sell(self, ctx, *args) -> None:
         """Sell the type and number of fruit from the caller's inventory based on args.
         """
+        # Create inventory if needed
+        if ctx.author.id not in self.__inventories:
+            self.__inventories[ctx.author.id] = []
+        inventory = self.__inventories[ctx.author.id]
+
+        sell_all = False
+        target_fruit = None
+        num = None
+
+        # Option 1: Specify exact type and amount of fruit to sell
         if len(args) >= 3:
             try:
                 num = int(args[2])  # Number of fruits to sell
             except ValueError:
                 # Invalid usage
-                await ctx.send("`<num>` must be a valid number")
+                await ctx.send("`<num> must be a valid number`")
                 return
-            fruit = ":" + args[1] + ":"  # Type of fruit to sell
-            inventory = self.__inventories[ctx.author.id]  # Caller's inventory
+            target_fruit = ":" + args[1] + ":"  # Type of fruit to sell
 
-            # Sell given fruit until no more remain or num reached
-            num_sold = 0
-            total_sale = 0.
-            for _ in range(0, num):
-                try:
-                    inventory.remove(fruit)  # Remove the fruit
-                    total_sale += self.__market[fruit]  # Add money
-                    self.__market[fruit] = round(self.__market[fruit] * 0.9, 2)  # Demand falls
-                    num_sold += 1
-                except ValueError:
-                    break
+        # Option 2: Sell all fruit
+        elif len(args) == 2 and args[1] == "all":
+            sell_all = True
 
-            total_sale = round(total_sale, 2)
-            if num_sold == 0:
-                # Did not sell anything
-                await ctx.send("No fruit were sold.")
-            else:
-                # Report sale information
-                self.__add_wealth(ctx.author.id, total_sale)
-                await ctx.send(f"You sold {str(num_sold)} {fruit} for ${str(total_sale)}.")
+        # Invalid usage
         else:
-            # Invalid usage
-            await ctx.send("`!plant sell <fruit> <num>`")
+            await ctx.send("`!plant sell <fruit> <num> or !plant sell all`")
+            return
+
+        # Sell given fruit until no more remain or num reached
+        num_sold = 0
+        total_sale = 0.
+        inventory_copy = inventory[:]
+        for fruit in inventory_copy:
+            if sell_all or (fruit == target_fruit and num_sold < num):
+                inventory.remove(fruit)  # Remove the fruit
+                total_sale += self.__market[fruit]  # Add sale money
+                self.__market[fruit] = self.__market[fruit] * 0.9  # Demand falls
+                num_sold += 1
+
+        if num_sold == 0:
+            # Did not sell anything
+            await ctx.send("No fruits were sold.")
+        else:
+            # Report sale information
+            self.__add_wealth(ctx.author.id, total_sale)
+            await ctx.send(f"You sold {num_sold} fruit for ${round(total_sale, 2)}." if sell_all
+                           else f"You sold {num_sold} {target_fruit} for ${round(total_sale, 2)}.")
 
     def __add_wealth(self, uid, amount) -> None:
         """Add the given amount of money to the account of the user with uid.
@@ -324,7 +328,7 @@ class PlantManager:
         """
         if self.__alive:
             # Lose hydration (100% per 30,000 seconds = 8.33 hrs)
-            self.__hydration = round(self.__hydration - 0.05, 2)
+            self.__hydration = self.__hydration - 0.05
 
             # Kill plant if over or underhydrated
             if self.__hydration > 200:
@@ -335,7 +339,7 @@ class PlantManager:
                 self.__alive = False
 
             # Lose happiness (exponential decay)
-            self.__happiness = round(self.__happiness * 0.9925, 2)
+            self.__happiness = self.__happiness * 0.9925
 
         # Generate fruit for the plant based on happiness probability
         if len(self.__fruits) < 20 and (random.random() <= self.__happiness / 200):
