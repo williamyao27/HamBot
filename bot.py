@@ -5,7 +5,7 @@
 # This is the main file to run HamBot on all connected servers.
 # ==================================================================================================
 import os
-import pickle
+import discord
 
 import dotenv
 from discord.ext import commands, tasks
@@ -24,7 +24,8 @@ GUILD = os.getenv("DISCORD_GUILD")
 guild_ids = [int(guild_id) for guild_id in GUILD.split(",")]
 
 # Create bot
-bot = commands.Bot(command_prefix="!")
+intents = discord.Intents().all()
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Initialize server-specific bot data
 poll_managers = {}
