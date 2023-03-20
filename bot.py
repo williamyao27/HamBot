@@ -24,7 +24,7 @@ GUILD = os.getenv("DISCORD_GUILD")
 guild_ids = [int(guild_id) for guild_id in GUILD.split(",")]
 
 # Create bot
-intents = discord.Intents().all()
+intents = discord.Intents().all()  # Grant all permissions
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Initialize server-specific bot data

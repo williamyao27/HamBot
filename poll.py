@@ -118,7 +118,7 @@ class PollManager:
                                        url="https://github.com/williamyao27",
                                        description="React here to indicate availability.",
                                        color=0xFF5733)
-            poll_embed.set_author(name=author.name, icon_url=author.avatar_url)
+            poll_embed.set_author(name=author.name, icon_url=author.display_avatar.url)
             poll_embed.set_thumbnail(
                 url="https://seeklogo.com/images/V/valorant-logo-FAB2CA0E55-seeklogo.com.png")
             poll_embed.add_field(name="**Yes:**",
@@ -192,7 +192,7 @@ class PollManager:
                                            description="",
                                            color=0xFF5733)
                 ping_embed.set_author(name=self.__latest_poll_caller.name,
-                                      icon_url=self.__latest_poll_caller.avatar_url)
+                                      icon_url=self.__latest_poll_caller.display_avatar.url)
 
                 # Send embed as message
                 await channel.send(text, embed=ping_embed)
