@@ -60,13 +60,12 @@ class PollManager:
         """
         lst = self.__poll_lists[avail]
         emoji = ""
-        match avail:
-            case "yes":
-                emoji = YES_EMOJI
-            case "wait":
-                emoji = WAIT_EMOJI
-            case "no":
-                emoji = NO_EMOJI
+        if avail == "yes":
+            emoji = YES_EMOJI
+        elif avail == "wait":
+            emoji = WAIT_EMOJI
+        elif avail == "no":
+            emoji = NO_EMOJI
 
         if len(lst) == 0:
             return "*n/a*"

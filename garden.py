@@ -296,26 +296,25 @@ class PlantManager:
 
         # Otherwise, process command intent
         else:
-            match args[0]:
-                case "water" | "w":
-                    await self.__water(ctx)
-                case "pet" | "p":
-                    await self.__pet(ctx)
-                case "name" | "n":
-                    await self.__set_name(ctx, *args)
-                case "harvest" | "h":
-                    await self.__harvest(ctx)
-                case "inventory" | "i":
-                    await self.__check_inventory(ctx)
-                case "bank" | "b":
-                    await self.__check_wealth(ctx, *args)
-                case "market" | "m":
-                    await self.__check_market(ctx)
-                case "sell" | "s":
-                    await self.__sell(ctx, *args)
-                case _:
-                    # Unknown command, react with ?
-                    await ctx.message.add_reaction("❓")
+            if args[0] in ["water", "w"]:
+                await self.__water(ctx)
+            elif args[0] in ["pet", "p"]:
+                await self.__pet(ctx)
+            elif args[0] in ["name", "n"]:
+                await self.__set_name(ctx, *args)
+            elif args[0] in ["harvest", "h"]:
+                await self.__harvest(ctx)
+            elif args[0] in ["inventory", "i"]:
+                await self.__check_inventory(ctx)
+            elif args[0] in ["bank", "b"]:
+                await self.__check_wealth(ctx, *args)
+            elif args[0] in ["market", "m"]:
+                await self.__check_market(ctx)
+            elif args[0] in ["sell", "s"]:
+                await self.__sell(ctx, *args)
+            else:
+                # Unknown command, react with ?
+                await ctx.message.add_reaction("❓")
 
     def __dump(self) -> None:
         """Write the relevant attributes of this server's plant as a dictionary into a pickle file.
