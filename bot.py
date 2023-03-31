@@ -1,5 +1,5 @@
 # ==================================================================================================
-# HamBot                            Created by William Yao                   Last updated 2023-03-18
+# HamBot                            Created by William Yao                   Last updated 2023-03-31
 # --------------------------------------------------------------------------------------------------
 # HamBot is a server utility bot that allows friends to coordinate and schedule gaming activities.
 # This is the main file to run HamBot on all connected servers.
@@ -11,7 +11,6 @@ import dotenv
 from discord.ext import commands, tasks
 
 import poll
-import garden
 
 
 # ==================================================================================================
@@ -29,7 +28,6 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Initialize server-specific bot data
 poll_managers = {}
-plant_managers = {}
 
 
 @bot.event
@@ -43,18 +41,6 @@ async def on_ready() -> None:
 
         # Initialize data for this server
         poll_managers[gid] = poll.PollManager()
-        plant_managers[gid] = garden.PlantManager(gid)
-
-
-# ==================================================================================================
-# PLANT MINIGAME
-# ==================================================================================================
-@bot.command()
-async def plant(ctx, *args) -> None:
-    """Process command to interact with the server plant.
-    """
-    gid = ctx.guild.id
-    await plant_managers[gid].process_cmd(ctx, *args)
 
 
 # ==================================================================================================
@@ -72,9 +58,6 @@ async def on_message(message) -> None:
 
     # Manage polls
     await poll_managers[gid].create_poll(message)
-
-    # Commands
-    await bot.process_commands(message)
 
 
 @bot.event
